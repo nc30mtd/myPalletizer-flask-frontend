@@ -1,0 +1,226 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    </head>
+    <body>
+        <div id="debug">
+            <div class="container">
+                <p>[Debug] 本体制御</p>
+                <button class="btn-primary" onclick="initJoints();">初期位置</button>
+                <button class="btn-primary" onclick="get_coord();">現在位置取得</button>
+
+                <div class="form-group">
+                    <label for="j1">J1</label>
+                    <input type="range" class="form-control-range" min="-160" max="160" value="0" onchange="set_angle(0);" id="j1">
+                    <div id="j1_angle">0</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="j2">J2</label>
+                    <input type="range" class="form-control-range" min="0" max="80" value="0" onchange="set_angle(1);" id="j2">
+                    <div id="j2_angle">0</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="j3">J3</label>
+                    <input type="range" class="form-control-range" min="0" max="45" value="0" onchange="set_angle(2);" id="j3">
+                    <div id="j3_angle">0</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="j4">J4</label>
+                    <input type="range" class="form-control-range" min="-160" max="160" onchange="set_angle(3);" id="j4">
+                    <div id="j4_angle">0</div>
+                </div>
+            </div>
+
+        </div>
+
+    </body>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script>
+
+const ANGLE_ENDPOINT = "./set_angle"
+const COORD_ENDPOINT = "./set_coord"
+const COORD_DIFF_ENDPOINT = "./set_coord_diff"
+const GET_COORD_ENDPOINT = "./get_coord"
+const PUMP_ENDPOINT = "./pump"
+var target_data = null;
+
+$(document).ready(function () {
+    get_coord();
+});
+
+function pump_on()
+{
+    console.log("pump_on()");
+    var data = [ 
+        1,  
+    ];
+    postRequest(PUMP_ENDPOINT, data, done, true);
+
+}
+
+function pump_off()
+{
+    console.log("pump_on()");
+    var data = [ 
+        0,  
+    ];
+    postRequest(PUMP_ENDPOINT, data, done, true);
+}
+
+function mov(idx, val)
+{
+    console.log("mov()");
+    const joints=['x','y','z'];
+    var data = [ 
+        0, 
+        0, 
+        0, 
+    ];
+    data[idx] += val;
+    console.log(data);
+    
+    postRequest(COORD_DIFF_ENDPOINT, data, done, true);
+}
+function resultGetCoord()
+{
+    console.log("resultGetCoord()");   
+    console.log(target_data);   
+    var data = JSON.parse(target_data);
+
+    $('#x').val(data[0]);
+    $('#y').val(data[1]);
+    $('#z').val(data[2]);
+
+
+    $('#x_value').text(data[0]);
+    $('#y_value').text(data[1]);
+    $('#z_value').text(data[2]);
+
+}
+function get_coord()
+{  
+    console.log("get_coord()");   
+    getRequest(GET_COORD_ENDPOINT, resultGetCoord);
+}
+$(".form-control-range").on("click", function(){
+    $('#j1_angle').text($('#j1').val());
+    $('#j2_angle').text($('#j2').val());
+    $('#j3_angle').text($('#j3').val());
+    $('#j4_angle').text($('#j4').val());
+});
+
+function initJoints()
+{
+    var data = [
+        0, 
+        0, 
+        0, 
+        0, 
+    ];
+
+    document.getElementById("j1").value = 0; 
+    document.getElementById("j2").value = 0;
+    document.getElementById("j3").value = 0;
+    document.getElementById("j4").value = 0;
+
+    console.log(data);
+
+    postRequest(ANGLE_ENDPOINT, data, done, true);
+    get_coord();
+}
+function done()
+{
+    console.log(target_data);   
+}
+function set_coord(index)
+{
+    const joints=['x','y','z'];
+    var data = [ 
+        $('#x').val(), 
+        $('#y').val(), 
+        $('#z').val(), 
+    ];
+    $('#x_value').text($('#x').val());
+    $('#y_value').text($('#y').val());
+    $('#z_value').text($('#z').val());
+    console.log(data);
+
+    postRequest(COORD_ENDPOINT, data, done, true);
+}
+
+function set_angle(index)
+{
+    const joints=['j1','j2','j3','j4'];
+    
+    var data = [ 
+        $('#j1').val(), 
+        $('#j2').val(), 
+        $('#j3').val(), 
+        $('#j4').val(),
+    ];
+
+    $('#j1_angle').text($('#j1').val());
+    $('#j2_angle').text($('#j2').val());
+    $('#j3_angle').text($('#j3').val());
+    $('#j4_angle').text($('#j4').val());
+    console.log(data);
+
+    postRequest(ANGLE_ENDPOINT, data, done, true);
+}
+function postRequest(url, data, callback, jsonflag)
+{
+    var xhrReq = new XMLHttpRequest();
+    xhrReq.onreadystatechange = function() 
+    {
+        if (xhrReq.readyState == 4 && xhrReq.status == 200) 
+        {
+            // 取得成功
+            var ret = xhrReq.responseText;
+            target_data = ret;
+            callback();
+        }else{
+            //取得失敗または状態遷移段階の処理
+        }
+    };
+    xhrReq.open("POST", url, true);
+
+    //リクエストデータに合わせてどちらか使う
+    if(jsonflag)
+    {
+        //(1) jsonをPOSTする場合
+        xhrReq.setRequestHeader("Content-Type", "application/json");
+        xhrReq.send(JSON.stringify(data));  
+    }else{
+        //(2) URLエンコードした文字列をPOSTする場合
+        xhrReq.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        xhrReq.send(data);
+    }
+}
+function getRequest(url, callback)
+{
+    var xhrReq = new XMLHttpRequest();
+    xhrReq.onreadystatechange = function() 
+    {
+        if (xhrReq.readyState == 4 && xhrReq.status == 200) 
+        {
+            // 取得成功
+            var ret = xhrReq.responseText;
+            target_data = ret;
+            callback();
+        }else{
+            //取得失敗または状態遷移段階の処理
+        }
+    };
+    xhrReq.open("GET", url, true);
+    xhrReq.send();
+}
+</script>
+</html>
